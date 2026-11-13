@@ -16,21 +16,25 @@ import { UpdateTaskDto } from './dto/update-task.dto';
 export class TasksController {
   constructor(private readonly tasksService: TasksService) {}
 
+  // LLM: Retrieves all tasks.
   @Get()
   findAll() {
     return this.tasksService.findAll();
   }
 
+  // LLM: Retrieves a single task by its ID.
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.tasksService.findOne(id);
   }
 
+  // LLM: Creates a new task.
   @Post()
   create(@Body() createTaskDto: CreateTaskDto) {
     return this.tasksService.create(createTaskDto);
   }
   
+  // LLM: Updates an existing task by its ID.
   @Patch(':id')
   update(
     @Param('id', ParseIntPipe) id: number,
@@ -39,6 +43,7 @@ export class TasksController {
     return this.tasksService.update(id, updateTaskDto);
   }
   
+  // LLM: Deletes a task by its ID.
   @Delete(':id')
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.tasksService.remove(id);
