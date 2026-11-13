@@ -60,6 +60,7 @@ export default function TaskDashboard() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
+  const [sortOrder, setSortOrder] = useState("DEFAULT");
 
   // LLM: Loads tasks from the API and updates the dashboard state.
   const loadTasks = useCallback(async () => {
@@ -151,19 +152,32 @@ export default function TaskDashboard() {
     return <Badge variant={variants[status]}>{labels[status]}</Badge>;
   }
 
-  // LLM: Filters tasks by their title, description, and selected status
+  // LLM: Filters tasks by search and status, then applies the selected due-date sorting order.
   const filteredTasks = tasks.filter((task) => {
     const query = searchQuery.toLowerCase().trim();
     
     const matchesSearch =
-       task.title.toLowerCase().includes(query) ||
-       (task.description?.toLowerCase().includes(query) ?? false);
-
+        task.title.toLowerCase().includes(query) ||
+        (task.description?.toLowerCase().includes(query) ?? false);
+    
     const matchesStatus =
-       statusFilter === "ALL" || task.status === statusFilter;
+        statusFilter === "ALL" || task.status === statusFilter;
 
-    return matchesSearch && matchesStatus;
+        return matchesSearch && matchesStatus;
   });
+  
+  const sortedTasks =
+    sortOrder === "DEFAULT"
+        ? filteredTasks
+        : [...filteredTasks].sort((a, b) => {
+            if (!a.dueDate && !b.dueDate) return 0;
+            if (!a.dueDate) return 1;
+            if (!b.dueDate) return -1;
+
+            const comparison = a.dueDate.localeCompare(b.dueDate);
+
+            return sortOrder === "DUE_DATE_DESC" ? -comparison : comparison;
+        });
 
   return (
     <main className="min-h-screen bg-muted/40 px-4 py-8 sm:px-6 lg:px-8">
@@ -207,13 +221,40 @@ export default function TaskDashboard() {
                 onValueChange={(value) => setStatusFilter(value ?? "ALL")}
             >
                 <SelectTrigger className="sm:max-w-[180px]">
-                <SelectValue placeholder="Filter by status" />
+                <SelectValue>
+                    {statusFilter === "ALL"
+                        ? "All Statuses"
+                        : statusFilter === "TODO"
+                        ? "To Do"
+                        : statusFilter === "IN_PROGRESS"
+                            ? "In Progress"
+                            : "Done"}
+                </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                 <SelectItem value="ALL">All Statuses</SelectItem>
                 <SelectItem value="TODO">To Do</SelectItem>
                 <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
                 <SelectItem value="DONE">Done</SelectItem>
+                </SelectContent>
+            </Select>
+            <Select
+                value={sortOrder}
+                onValueChange={(value) => setSortOrder(value ?? "DEFAULT")}
+            >
+                <SelectTrigger className="sm:max-w-[200px]">
+                    <SelectValue>
+                        {sortOrder === "DEFAULT"
+                            ? "Default Order"
+                            : sortOrder === "DUE_DATE_ASC"
+                            ? "Due Date: Earliest First"
+                            : "Due Date: Latest First"}
+                    </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="DEFAULT">Default Order</SelectItem>
+                    <SelectItem value="DUE_DATE_ASC">Due Date: Earliest First</SelectItem>
+                    <SelectItem value="DUE_DATE_DESC">Due Date: Latest First</SelectItem>
                 </SelectContent>
             </Select>
             <div className="flex items-center justify-between gap-3 sm:ml-auto">
@@ -224,10 +265,11 @@ export default function TaskDashboard() {
                 <Button
                     variant="ghost"
                     size="sm"
-                    disabled={!searchQuery && statusFilter === "ALL"}
+                    disabled={!searchQuery && statusFilter === "ALL" && sortOrder === "DEFAULT"}
                     onClick={() => {
                     setSearchQuery("");
                     setStatusFilter("ALL");
+                    setSortOrder("DEFAULT");
                     }}
                 >
                     Reset
@@ -259,7 +301,7 @@ export default function TaskDashboard() {
                 </TableHeader>
 
                 <TableBody>
-                    {filteredTasks.length === 0 ? (
+                    {sortedTasks.length === 0 ? (
                         <TableRow>
                             <TableCell
                                 colSpan={5}
@@ -269,7 +311,7 @@ export default function TaskDashboard() {
                             </TableCell>
                         </TableRow>
                     ) : (
-                    filteredTasks.map((task) => (
+                    sortedTasks.map((task) => (
                         <TableRow key={task.id}>
                             <TableCell className="font-medium">
                                 {task.title}
