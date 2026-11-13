@@ -3,7 +3,7 @@
 // LLM: Displays the task dashboard and manages loading, error, and task-list states.
 
 import { useCallback, useEffect, useState } from "react";
-import { getTasks } from "@/lib/api";
+import { getTasks, deleteTask } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import TaskForm from "@/components/tasks/task-form";
 import {
@@ -30,6 +30,17 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 
 export default function TaskDashboard() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -37,6 +48,8 @@ export default function TaskDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | undefined>(undefined);
+  const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // LLM: Loads tasks from the API and updates the dashboard state.
   const loadTasks = useCallback(async () => {
@@ -87,6 +100,28 @@ export default function TaskDashboard() {
     setIsTaskDialogOpen(false);
     setSelectedTask(undefined);
     await loadTasks();
+  }
+
+  // LLM: Deletes the selected task and refreshes the task list.
+  async function handleTaskDeleted() {
+    if (!taskToDelete) return;
+    
+    try {
+        setIsDeleting(true);
+        
+        await deleteTask(taskToDelete.id);
+        
+        toast.success("Task deleted successfully.");
+        setTaskToDelete(null);
+        
+        await loadTasks();
+    } catch (err) {
+        toast.error(
+            err instanceof Error ? err.message : "Failed to delete task.",
+        );
+    } finally {
+        setIsDeleting(false);
+    }
   }
 
   // LLM: Returns a visual badge for the task's current status.
@@ -189,6 +224,13 @@ export default function TaskDashboard() {
                         >
                             Edit
                         </Button>
+                        <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => setTaskToDelete(task)}
+                        >
+                            Delete
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -225,6 +267,41 @@ export default function TaskDashboard() {
                 />
             </DialogContent>
         </Dialog>
+        <AlertDialog
+        open={taskToDelete !== null}
+        onOpenChange={(open) => {
+            if (!open && !isDeleting) {
+            setTaskToDelete(null);
+            }
+        }}
+        >
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>
+                        LLM Delete Task
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Are you sure you want to delete &quot;
+                        {taskToDelete?.title}
+                        &quot;? This action cannot be undone.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+
+                <AlertDialogFooter>
+                    <AlertDialogCancel disabled={isDeleting}>
+                        Cancel
+                    </AlertDialogCancel>
+
+                    <AlertDialogAction
+                        variant="destructive"
+                        disabled={isDeleting}
+                        onClick={handleTaskDeleted}
+                    >
+                        {isDeleting ? "Deleting..." : "Delete Task"}
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
       </div>
     </main>
   );
