@@ -2,8 +2,17 @@
 
 // LLM: Displays the task dashboard and manages loading, error, and task-list states.
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { getTasks } from "@/lib/api";
+import { Button } from "@/components/ui/button";
+import TaskForm from "@/components/tasks/task-form";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import type { Task } from "@/types/task";
 import {
   Card,
@@ -26,26 +35,57 @@ export default function TaskDashboard() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
 
-  // LLM: Loads tasks from the API when the dashboard first renders.
-  useEffect(() => {
-    async function loadTasks() {
-      try {
-        setLoading(true);
-        setError(null);
+  // LLM: Loads tasks from the API and updates the dashboard state.
+  const loadTasks = useCallback(async () => {
+    try {
         const data = await getTasks();
         setTasks(data);
-      } catch (err) {
+        setError(null);
+    } catch (err) {
         setError(
-          err instanceof Error ? err.message : "Something went wrong.",
+            err instanceof Error ? err.message : "Something went wrong.",
         );
-      } finally {
+    } finally {
         setLoading(false);
-      }
     }
-
-    loadTasks();
   }, []);
+  
+  // LLM: Loads tasks from the API when the dashboard first renders.
+  useEffect(() => {
+    let isActive = true;
+    
+    getTasks()
+        .then((data) => {
+            if (isActive) {
+                setTasks(data);
+                setError(null);
+            }
+        })
+        .catch((err) => {
+            if (isActive) {
+                setError(
+                err instanceof Error ? err.message : "Something went wrong.",
+            );
+            }
+        })
+        .finally(() => {
+            if (isActive) {
+                setLoading(false);
+            }
+        });
+
+    return () => {
+        isActive = false;
+    };
+  }, []);
+
+  // LLM: Closes the creation dialog and refreshes the task list.
+  async function handleTaskCreated() {
+    setIsCreateOpen(false);
+    await loadTasks();
+  }
 
   // LLM: Returns a visual badge for the task's current status.
   function getStatusBadge(status: Task["status"]) {
@@ -67,11 +107,17 @@ export default function TaskDashboard() {
   return (
     <main className="min-h-screen bg-muted/40 px-4 py-8 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-6xl space-y-8">
-        <header>
-          <h1 className="text-3xl font-bold tracking-tight">LLM Tasks</h1>
-          <p className="mt-2 text-muted-foreground">
-            Organise your work and keep track of what needs to get done.
-          </p>
+        <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+                <h1 className="text-3xl font-bold tracking-tight">LLM Tasks</h1>
+                <p className="mt-2 text-muted-foreground">
+                Organise your work and keep track of what needs to get done.
+                </p>
+            </div>
+
+            <Button onClick={() => setIsCreateOpen(true)}>
+                Create Task
+            </Button>
         </header>
 
         <Card>
@@ -131,6 +177,23 @@ export default function TaskDashboard() {
             )}
           </CardContent>
         </Card>
+
+        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+            <DialogContent>
+                <DialogHeader>
+                <DialogTitle>LLM Create Task</DialogTitle>
+                <DialogDescription>
+                    Add a new task to your task list.
+                </DialogDescription>
+                </DialogHeader>
+
+                <TaskForm
+                onTaskCreated={handleTaskCreated}
+                onCancel={() => setIsCreateOpen(false)}
+                />
+            </DialogContent>
+        </Dialog>
+
       </div>
     </main>
   );
