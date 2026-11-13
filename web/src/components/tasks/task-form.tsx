@@ -1,10 +1,10 @@
 "use client";
 
-// LLM: Provides a form for creating tasks with title, description, status, and due date.
+// LLM: Provides a form for creating and editing tasks.
 
 import { useState } from "react";
-import { createTask } from "@/lib/api";
-import type { TaskStatus } from "@/types/task";
+import { createTask, updateTask } from "@/lib/api";
+import type { Task, TaskStatus } from "@/types/task";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,18 +12,20 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
 interface TaskFormProps {
-  onTaskCreated: () => void;
+  task?: Task;
+  onTaskSaved: () => void;
   onCancel: () => void;
 }
 
 export default function TaskForm({
-  onTaskCreated,
+  task,
+  onTaskSaved,
   onCancel,
 }: TaskFormProps) {
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [status, setStatus] = useState<TaskStatus>("TODO");
-  const [dueDate, setDueDate] = useState("");
+  const [title, setTitle] = useState(task?.title ?? "");
+  const [description, setDescription] = useState(task?.description ?? "");
+  const [status, setStatus] = useState<TaskStatus>(task?.status ?? "TODO");
+  const [dueDate, setDueDate] = useState(task?.dueDate ?? "");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -40,16 +42,27 @@ export default function TaskForm({
       setLoading(true);
       setError(null);
 
-      await createTask({
-        title: title.trim(),
-        description: description.trim() || undefined,
-        status,
-        dueDate: dueDate || undefined,
-      });
+      if (task) {
+        await updateTask(task.id, {
+            title: title.trim(),
+            description: description.trim() || undefined,
+            status,
+            dueDate: dueDate || undefined,
+        });
 
-      toast.success("Task created successfully.");
+        toast.success("Task updated successfully.");
+        } else {
+            await createTask({
+                title: title.trim(),
+                description: description.trim() || undefined,
+                status,
+                dueDate: dueDate || undefined,
+            });
 
-      onTaskCreated();
+            toast.success("Task created successfully.");
+        }
+
+        onTaskSaved();
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to create task.",
@@ -119,7 +132,13 @@ export default function TaskForm({
           Cancel
         </Button>
         <Button type="submit" disabled={loading}>
-          {loading ? "Creating..." : "Create Task"}
+            {loading
+                ? task
+                ? "Saving..."
+                : "Creating..."
+                : task
+                ? "Save Changes"
+                : "Create Task"}
         </Button>
       </div>
     </form>

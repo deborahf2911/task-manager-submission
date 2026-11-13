@@ -35,7 +35,8 @@ export default function TaskDashboard() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<Task | undefined>(undefined);
 
   // LLM: Loads tasks from the API and updates the dashboard state.
   const loadTasks = useCallback(async () => {
@@ -81,9 +82,10 @@ export default function TaskDashboard() {
     };
   }, []);
 
-  // LLM: Closes the creation dialog and refreshes the task list.
-  async function handleTaskCreated() {
-    setIsCreateOpen(false);
+  // LLM: Closes the task dialog and refreshes the task list.
+  async function handleTaskSaved() {
+    setIsTaskDialogOpen(false);
+    setSelectedTask(undefined);
     await loadTasks();
   }
 
@@ -115,7 +117,12 @@ export default function TaskDashboard() {
                 </p>
             </div>
 
-            <Button onClick={() => setIsCreateOpen(true)}>
+            <Button
+                onClick={() => {
+                    setSelectedTask(undefined);
+                    setIsTaskDialogOpen(true);
+                }}
+                >
                 Create Task
             </Button>
         </header>
@@ -147,6 +154,7 @@ export default function TaskDashboard() {
                     <TableHead>LLM Status</TableHead>
                     <TableHead>LLM Due Date</TableHead>
                     <TableHead>LLM Created</TableHead>
+                    <TableHead>LLM Actions</TableHead>
                   </TableRow>
                 </TableHeader>
 
@@ -170,6 +178,18 @@ export default function TaskDashboard() {
                       <TableCell>
                         {new Date(task.createdAt).toLocaleDateString()}
                       </TableCell>
+                      <TableCell>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                            setSelectedTask(task);
+                            setIsTaskDialogOpen(true);
+                            }}
+                        >
+                            Edit
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -178,22 +198,33 @@ export default function TaskDashboard() {
           </CardContent>
         </Card>
 
-        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+        <Dialog
+        open={isTaskDialogOpen}
+        onOpenChange={setIsTaskDialogOpen}
+        >
             <DialogContent>
                 <DialogHeader>
-                <DialogTitle>LLM Create Task</DialogTitle>
-                <DialogDescription>
-                    Add a new task to your task list.
-                </DialogDescription>
+                    <DialogTitle>
+                        {selectedTask ? "LLM Edit Task" : "LLM Create Task"}
+                    </DialogTitle>
+                    <DialogDescription>
+                        {selectedTask
+                        ? "Update the details of your task."
+                        : "Add a new task to your task list."}
+                    </DialogDescription>
                 </DialogHeader>
 
                 <TaskForm
-                onTaskCreated={handleTaskCreated}
-                onCancel={() => setIsCreateOpen(false)}
+                key={selectedTask?.id ?? "new-task"}
+                task={selectedTask}
+                onTaskSaved={handleTaskSaved}
+                onCancel={() => {
+                    setIsTaskDialogOpen(false);
+                    setSelectedTask(undefined);
+                }}
                 />
             </DialogContent>
         </Dialog>
-
       </div>
     </main>
   );
