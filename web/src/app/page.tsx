@@ -1,3 +1,4 @@
+// LLM: Renders the main task management dashboard.
 import Image from "next/image";
 
 export default function Home() {
