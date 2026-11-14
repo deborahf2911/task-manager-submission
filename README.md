@@ -9,6 +9,7 @@ A full-stack task management application built with **NestJS**, **Next.js App Ro
 - Add an optional description and due date.
 - Search tasks by title or description.
 - Filter tasks by status.
+- Sort tasks by due date in ascending or descending order.
 - View task statuses using badges.
 - Confirm before deleting a task.
 - Receive feedback through toast notifications.
