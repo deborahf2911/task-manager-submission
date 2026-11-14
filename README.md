@@ -83,6 +83,35 @@ The frontend uses `NEXT_PUBLIC_API_URL` from `.env.local` to connect to the back
 
 Keep both terminals running while using the application.
 
+### 4. Run with Docker Compose
+
+Docker Desktop must be installed and running before starting the application.
+
+From the repository root, run:
+
+```powershell
+docker compose up --build
+```
+
+Docker Compose builds and starts both the NestJS backend API and the Next.js frontend.
+
+Once both services are running, access the application at:
+
+- **Frontend:** http://localhost:3001
+- **Backend API:** http://localhost:3000/tasks
+
+The backend uses SQLite for data storage. Docker Compose mounts a named volume (`api-data`) to persist the database independently of the API container.
+
+To stop the application, press `Ctrl + C` in the terminal running Docker Compose, or run:
+
+```powershell
+docker compose down
+```
+
+The named volume is preserved when using `docker compose down`, so your tasks remain available when you start the application again.
+
+**Note:** Running `docker compose down -v` removes the named volume and permanently deletes the database stored in it.
+
 ## API Endpoints
 
 The API is available at `http://localhost:3000`.
@@ -130,15 +159,17 @@ New tasks default to the `TODO` status.
 ```text
 task-manager-submission/
 ├── api/
-│   └── src/
-│       ├── tasks/
-│       │   ├── dto/
-│       │   ├── entities/
-│       │   ├── tasks.controller.ts
-│       │   ├── tasks.service.ts
-│       │   └── tasks.module.ts
-│       ├── app.module.ts
-│       └── main.ts
+│   ├── src/
+│   │   ├── tasks/
+│   │   │   ├── dto/
+│   │   │   ├── entities/
+│   │   │   ├── tasks.controller.ts
+│   │   │   ├── tasks.service.ts
+│   │   │   └── tasks.module.ts
+│   │   ├── app.module.ts
+│   │   └── main.ts
+│   ├── Dockerfile
+│   └── .dockerignore
 │
 ├── web/
 │   ├── src/
@@ -148,9 +179,13 @@ task-manager-submission/
 │   │   │   └── ui/
 │   │   ├── lib/
 │   │   └── types/
+│   ├── Dockerfile
+│   ├── .dockerignore
 │   └── .env.example
 │
-└── README.md
+├── docker-compose.yml
+├── README.md
+└── .gitignore
 ```
 
 ## Running Checks
@@ -172,6 +207,8 @@ npm run build
 
 ## How I Used AI
 
-I used ChatGPT as a development assistant throughout the assignment. It helped me understand the requirements, plan the application structure, work through implementation decisions, troubleshoot errors, and review the code.
+I used ChatGPT as a development assistant throughout the assignment. It helped me understand the requirements, plan the application structure, explore implementation approaches, troubleshoot errors, and review the code.
 
-I implemented and tested the application incrementally, including the API endpoints, input validation, database persistence, and frontend task management features. I also used AI assistance to review the setup instructions and prepare this documentation.
+I implemented the application incrementally and tested the API endpoints, input validation, database persistence, and frontend task management features. I reviewed and adapted AI-generated suggestions to fit the project requirements rather than using them blindly.
+
+I also used AI assistance when configuring Docker and Docker Compose, writing the setup instructions, and reviewing the documentation. I verified the Docker setup by building and running both containers, creating a task, and restarting the containers to confirm that the task persisted through the named volume.

@@ -6,7 +6,7 @@ import { TasksModule } from './tasks/tasks.module';
   imports: [
     TypeOrmModule.forRoot({
       type: 'better-sqlite3',
-      database: 'tasks.sqlite',
+      database: process.env.DATABASE_PATH ?? 'tasks.sqlite',
       autoLoadEntities: true,
       synchronize: true,
     }),
